@@ -1,6 +1,6 @@
 # DEFI
 
-the DEFI contract on ethereum
+the DEFI contract on Blockchain
 
 SETUP
 
