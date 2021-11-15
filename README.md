@@ -2,18 +2,17 @@
 
 the defi smart contract on ethereum
 
-Setup
+SETUP
 npm install
 
-deploy
-
+DEPLOY
 Start a local node and deploy the top-level contracts:
 npm start
 
 
-test
+TEST
 npm test
 
-Connect Locally
+CONNECT LOCALY
 Start up a Hardhat Console:
 hardhat console --network localhost
