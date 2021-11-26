@@ -89,7 +89,6 @@ contract("Voting.sol", function (accounts) {
 
     it("... teste des phases exclusifs", async () => {
       voting = await Voting.new({from:owner});
-
       fcts = [voting.startProposalsRegistering, 
 	      voting.endProposalsRegistering, 
 	      voting.startVotingSession,

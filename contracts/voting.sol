@@ -3,10 +3,11 @@
 pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-
+/**
+ * @title Voting Contract
+ * @author Alyra
+ */
 contract Voting is Ownable {
-
-    // arrays for draw, uint for single
     uint[] winningProposalsID;
     Proposal[] winningProposals;
     
