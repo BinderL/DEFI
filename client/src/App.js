@@ -1,27 +1,37 @@
-import React, {useState} from 'react'
+import React, {useState, useEffect} from 'react'
 import './App.css';
-import SimpleStorageContract from "./contracts/SimpleStorage.json";
+import Voting from "./contracts/Voting.json";
 import getWeb3 from "./getWeb3";
+import CustomInput from "./component/CustomInput";
+import CustomStatus from "./component/CustomStatus";
+import CustomButton from "./component/CustomButton";
+import CustomText from "./component/CustomText";
 
 function App() {
-  const [storageValue, setStorageValue] = useState (0);
 	const [web3, setWeb3] = useState (null);
-	var state = {accounts: null,contract: null };
-
-	const lookForWeb3 = async (state) => {
+	const [accounts, setAccounts] = useState(null);
+	const [contract, setContract] = useState(null)
+	const [voter, setVoter] = useState("");
+	const [voters, setVoters] = useState([]);
+	const [proposal, setProposal] = useState("");
+	const [id_proposal, setId_proposal] = useState(0);
+	const [winner, setWinner] = useState("");	
+				
+	const lookForWeb3 = async () => {
 		try {
-			const _web3 = await getWeb3();
-			const accounts = await _web3.eth.getAccounts();
-			const networkId = await _web3.eth.net.getId();
-			const deployedNetwork = SimpleStorageContract.networks[networkId];
-			const instance = 	new _web3.eth.Contract(
-				SimpleStorageContract.abi,
-				deployedNetwork.address,
+			const web3 = await getWeb3();
+			const accounts = await web3.eth.getAccounts();
+			const _networkId = await web3.eth.net.getId();
+			const _deployedNetwork = Voting.networks[_networkId];
+			console.log(accounts);
+			const instance = 	new web3.eth.Contract(
+				Voting.abi,
+				_deployedNetwork.address,
 			);
-			setWeb3(_web3)
-			state.contract = instance;
-			state.accounts = accounts
-			run(state);
+			setWeb3(web3);
+			setContract(instance);
+			setAccounts(accounts);
+			run();
 		}
 		catch (error) { 
 			alert('failed to load web3, accounts or contract. Check console for details');
@@ -29,13 +39,81 @@ function App() {
 		}
 	}
 		
-	const run = async (state) => {
-		await state.contract.methods.set(5).send({from: state.accounts[0]});
-		const response = await state.contract.methods.get().call();
-		setStorageValue(response);
+	const run = async () => {
+	
 	}
 
-	lookForWeb3(state);
+	const registerVoter = async () => {
+		setVoters((lastVoters) => [...lastVoters, {id:voters.length.toString(),title:voter}]);
+		await contract.methods.addVoter(voter).send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.VoterRegistered.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.VoterRegistered.returnValues.voterAddress);
+		});
+		setVoter("");
+	}
+	
+	const beginProposalSession = async () => {
+		await contract.methods.startProposalsRegistering().send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.WorkflowStatusChange.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.WorkflowStatusChange.returnValues.previousStatus, result.events.WorkflowStatusChange.returnValues.newStatus);
+		});
+	}
+
+  const registerProposal = async () => {
+		await contract.methods.addProposal(proposal).send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.ProposalRegistered.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.ProposalRegistered.returnValues.proposalId);
+		});
+		setProposal("");
+	}
+				
+	const endProposalSession = async () => {
+		await contract.methods.endProposalsRegistering().send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.WorkflowStatusChange.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.WorkflowStatusChange.returnValues.previousStatus, result.events.WorkflowStatusChange.returnValues.newStatus);
+		});
+	}
+
+	const beginVotingSession = async () => {
+		await contract.methods.startVotingSession().send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.WorkflowStatusChange.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.WorkflowStatusChange.returnValues.previousStatus, result.events.WorkflowStatusChange.returnValues.newStatus);
+		});
+	}
+	
+	const endVotingSession = async () => {
+		await contract.methods.endVotingSession().send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.WorkflowStatusChange.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.WorkflowStatusChange.returnValues.previousStatus, result.events.WorkflowStatusChange.returnValues.newStatus);
+		});
+	}
+
+	const registerVote = async () => {
+		console.log(accounts);
+		await contract.methods.setVote(proposal).send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.Voted.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.Voted.returnValues.voter, result.events.Voted.returnValues.proposalId);
+		});
+		setId_proposal(0);
+	}
+	const compute = async () => {
+		await contract.methods.tallyVotesDraw().send({ from: accounts[0] }).then((result) => {
+						console.log("event: ", result.events.WorkflowStatusChange.event, "was emited and recorded on blockchain");
+						console.log("data recorded: ",result.events.WorkflowStatusChange.returnValues.previousStatus, result.events.WorkflowStatusChange.returnValues.newStatus);
+		});
+	}
+
+	const whoWin = async () => {
+		let winningProposal = await contract.methods.getWinner().call({ from: accounts[0] });
+		console.log(winningProposal);
+		setWinner(winningProposal[0]);
+	
+
+	}
+			
+	useEffect(() => {
+		lookForWeb3();
+	});
 
 	if (!web3) {
 		return <div>Loading Web3, accounts, and contract...... </div>;
@@ -47,12 +125,68 @@ function App() {
 			<h2>Smart Contract Example</h2>
 			<p>
 				If your contracts compiled and migrated successfully, below will show
-	a stored value of 5 (by default).
+	the owner of the contract (by default).
 			</p>
+			<CustomInput 
+				data={voter} 
+				commentaire="Voter Address, message signed by Owner" 
+				action={setVoter}/>
+
+			<CustomButton
+				name="Add Voter"
+				onPress={registerVoter} />
+					
+			<CustomStatus
+				data={voters} />
+
+			<CustomButton
+				name="Begin Proposal Session"
+				onPress={beginProposalSession} />
+
+			<CustomInput 
+				data={proposal} 
+				commentaire="proposal, message signed by Voter already registered" 
+				action={setProposal}/>
+
+			<CustomButton
+				name="Add proposal"
+				onPress={registerProposal} />
+	
+			<CustomButton
+				name="End Proposal Session"
+				onPress={endProposalSession} />
+
+			<CustomButton
+				name="Begin Voting Session"
+				onPress={beginVotingSession} />
+
+			<CustomInput 
+				data={id_proposal} 
+				commentaire="ID of a proposal already registered, message signed by Voter already registered" 
+				action={setId_proposal}/>
+
+			<CustomButton
+				name="Vote for a proposal"
+				onPress={registerVote} />
+	
+			<CustomButton
+				name="End Voting Session"
+				onPress={endVotingSession} />
+
+			<CustomButton
+				name="COMPUTE"
+				onPress={compute} />
+
+			<CustomButton
+				name="Ask Winner"
+				onPress={whoWin} />
+
+			<CustomText
+				content={winner}/>
 			<p>
 	Try changing the value stored on <strong>line 42</strong> of App.js.
 			</p>
-			<div>The stored value is: {storageValue}</div>
+			<div>The stored value is: </div>
 		</div>
 	);
 }
