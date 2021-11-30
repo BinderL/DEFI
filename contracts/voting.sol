@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /**
  * @title Voting Contract
  * @author Alyra
+ * @notice Voting game with transition step
  */
 contract Voting is Ownable {
     uint[] winningProposalsID;
@@ -50,11 +51,13 @@ contract Voting is Ownable {
     // on peut faire un modifier pour les états
 
     // ::::::::::::: GETTERS ::::::::::::: //
-
+    /// @param voter address to check
+    /// @return voter data struct
     function getVoter(address _addr) external onlyVoters view returns (Voter memory) {
         return voters[_addr];
     }
-    
+    /// @param id of proposal
+    /// @return proposal content
     function getOneProposal(uint _id) external view returns (Proposal memory) {
         return proposalsArray[_id];
     }
@@ -65,13 +68,14 @@ contract Voting is Ownable {
         return winningProposals; // return proposalsArray[winningProposalID];
     }
 
+    /// @return proposal content
     function getWinner() external view returns (Proposal memory) {
         require(workflowStatus == WorkflowStatus.VotesTallied, 'Votes are not tallied yet');
         return proposalsArray[winningProposalID];
     }
  
     // ::::::::::::: REGISTRATION ::::::::::::: // 
-
+    /// @param address of voter enable
     function addVoter(address _addr) external onlyOwner {
         require(workflowStatus == WorkflowStatus.RegisteringVoters, 'Voters registration is not open yet');
         require(voters[_addr].isRegistered != true, 'Already registered');
@@ -89,7 +93,7 @@ contract Voting is Ownable {
     }*/
 
     // ::::::::::::: PROPOSAL ::::::::::::: // 
-
+    /// @param content of proposal
     function addProposal(string memory _desc) external onlyVoters {
         require(workflowStatus == WorkflowStatus.ProposalsRegistrationStarted, 'Proposals are not allowed yet');
         require(keccak256(abi.encode(_desc)) != keccak256(abi.encode("")), 'Vous ne pouvez pas ne rien proposer'); // facultatif
@@ -102,7 +106,7 @@ contract Voting is Ownable {
     }
 
     // ::::::::::::: VOTE ::::::::::::: //
-
+    /// @param id of proposal 
     function setVote( uint _id) external onlyVoters {
         require(workflowStatus == WorkflowStatus.VotingSessionStarted, 'Voting session havent started yet');
         require(voters[msg.sender].hasVoted != true, 'You have already voted');
